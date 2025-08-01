@@ -1,0 +1,17 @@
+__pycache__/
+.cache/
+*.pyc
+.DS_Store
+run*.sh
+*.wav
+*.npy
+8sem/
+eval/
+nepali_eval/
+Training/
+training1/
+spectrogramsEval/
+our_code/
+nepali/
+logs-tacotron/
+July_31/
