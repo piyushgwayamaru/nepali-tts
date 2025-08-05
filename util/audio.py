@@ -5,6 +5,8 @@ import numpy as np
 # import tensorflow as tf
 import scipy
 from hparams import hparams
+import scipy.io.wavfile as wavfile
+
 
 import tensorflow as tf
 tf.compat.v1.disable_eager_execution()
@@ -135,6 +137,11 @@ def _stft_parameters():
   win_length = int(hparams.frame_length_ms / 1000 * hparams.sample_rate)
   return n_fft, hop_length, win_length
 
+def save_wav_bytesio(wav, buffer, sample_rate=22050):
+    """
+    Save the given int16 waveform to a BytesIO buffer as a proper WAV file.
+    """
+    wavfile.write(buffer, sample_rate, wav)
 
 # Conversions:
 

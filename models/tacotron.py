@@ -111,17 +111,38 @@ class Tacotron():
       log('  linear out:              %d' % linear_outputs.shape[-1])
 
 
-  def add_loss(self):
-    '''Adds loss to the model. Sets "loss" field. initialize must have been called.'''
-    with tf.variable_scope('loss') as scope:
-      hp = self._hparams
-      self.mel_loss = tf.reduce_mean(tf.abs(self.mel_targets - self.mel_outputs))
-      l1 = tf.abs(self.linear_targets - self.linear_outputs)
-      # Prioritize loss for frequencies under 3000 Hz.
-      n_priority_freq = int(3000 / (hp.sample_rate * 0.5) * hp.num_freq)
-      self.linear_loss = 0.5 * tf.reduce_mean(l1) + 0.5 * tf.reduce_mean(l1[:,:,0:n_priority_freq])
-      self.loss = self.mel_loss + self.linear_loss
+  # def add_loss(self):
+  #   '''Adds loss to the model. Sets "loss" field. initialize must have been called.'''
+  #   with tf.variable_scope('loss') as scope:
+  #     hp = self._hparams
+  #     self.mel_loss = tf.reduce_mean(tf.abs(self.mel_targets - self.mel_outputs))
+  #     l1 = tf.abs(self.linear_targets - self.linear_outputs)
+  #     # Prioritize loss for frequencies under 3000 Hz.
+  #     n_priority_freq = int(3000 / (hp.sample_rate * 0.5) * hp.num_freq)
+  #     self.linear_loss = 0.5 * tf.reduce_mean(l1) + 0.5 * tf.reduce_mean(l1[:,:,0:n_priority_freq])
+  #     self.loss = self.mel_loss + self.linear_loss
 
+  def add_loss(self):
+    with tf.variable_scope('loss') as scope:
+        hp = self._hparams
+
+        # === MEL LOSS ===
+        mel_len = tf.minimum(tf.shape(self.mel_targets)[1], tf.shape(self.mel_outputs)[1])
+        mel_targets_clipped = self.mel_targets[:, :mel_len, :]
+        mel_outputs_clipped = self.mel_outputs[:, :mel_len, :]
+        raw_mel_loss = tf.reduce_mean(tf.abs(mel_targets_clipped - mel_outputs_clipped))
+        self.mel_loss = tf.clip_by_value(raw_mel_loss, 0.0, 10.0)
+
+        # === LINEAR LOSS ===
+        linear_len = tf.minimum(tf.shape(self.linear_targets)[1], tf.shape(self.linear_outputs)[1])
+        linear_targets_clipped = self.linear_targets[:, :linear_len, :]
+        linear_outputs_clipped = self.linear_outputs[:, :linear_len, :]
+        l1 = tf.abs(linear_targets_clipped - linear_outputs_clipped)
+        n_priority_freq = int(3000 / (hp.sample_rate * 0.5) * hp.num_freq)
+        linear_loss = 0.5 * tf.reduce_mean(l1) + 0.5 * tf.reduce_mean(l1[:, :, :n_priority_freq])
+        self.linear_loss = tf.clip_by_value(linear_loss, 0.0, 10.0)
+
+        self.loss = self.mel_loss + self.linear_loss
 
   def add_optimizer(self, global_step):
     '''Adds optimizer. Sets "gradients" and "optimize" fields. add_loss must have been called.

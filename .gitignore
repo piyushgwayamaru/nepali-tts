@@ -11,7 +11,9 @@ nepali_eval/
 Training/
 training1/
 spectrogramsEval/
-our_code/
 nepali/
 logs-tacotron/
 July_31/
+16k/
+mel_output/
+spec_output/
